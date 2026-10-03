@@ -1,5 +1,10 @@
 import { Electroview } from "electrobun/view";
-import type { AppRPC, Recipient } from "../shared/rpc";
+import type {
+  AppRPC,
+  HistoryMeta,
+  Recipient,
+  SavedState,
+} from "../shared/rpc";
 
 const $ = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
@@ -40,24 +45,23 @@ new Electroview({ rpc });
 // --- Persistence ---
 const STORE_KEY = "bulkmailer.state";
 
-type SavedState = {
-  user: string;
-  password: string;
-  fromName: string;
-  fromEmail: string;
-  subject: string;
-  html: string;
-  delay: number;
-  recipients: Recipient[];
-};
-
 let dirty = false;
 const saveIndicator = $("save-indicator");
+const historySelect = $("history") as HTMLSelectElement;
 
-function saveState() {
-  if (!dirty) return;
-  dirty = false;
-  const state: SavedState = {
+function renderHistorySelect(entries: HistoryMeta[]) {
+  historySelect.innerHTML =
+    '<option value="">History</option>' +
+    entries
+      .map((e) => {
+        const label = e.subject || "(no subject)";
+        return `<option value="${e.id}">${escapeHtml(label)}</option>`;
+      })
+      .join("");
+}
+
+function currentState(): SavedState {
+  return {
     user: ($("user") as HTMLInputElement).value,
     password: ($("password") as HTMLInputElement).value,
     fromName: ($("from-name") as HTMLInputElement).value,
@@ -67,6 +71,24 @@ function saveState() {
     delay: Number(($("delay") as HTMLInputElement).value) || 0,
     recipients,
   };
+}
+
+function applyState(s: Partial<SavedState>) {
+  ($("user") as HTMLInputElement).value = s.user ?? "";
+  ($("password") as HTMLInputElement).value = s.password ?? "";
+  ($("from-name") as HTMLInputElement).value = s.fromName ?? "";
+  ($("from-email") as HTMLInputElement).value = s.fromEmail ?? "";
+  ($("subject") as HTMLInputElement).value = s.subject ?? "";
+  editor.innerHTML = s.html ?? "";
+  if (s.delay != null)
+    ($("delay") as HTMLInputElement).value = String(s.delay);
+  if (Array.isArray(s.recipients)) recipients = s.recipients;
+}
+
+function saveState() {
+  if (!dirty) return;
+  dirty = false;
+  const state = currentState();
   localStorage.setItem(STORE_KEY, JSON.stringify(state));
   saveIndicator.textContent = "Saved";
   saveIndicator.classList.remove("unsaved");
@@ -83,15 +105,7 @@ function loadState() {
     const raw = localStorage.getItem(STORE_KEY);
     if (!raw) return;
     const s = JSON.parse(raw) as Partial<SavedState>;
-    ($("user") as HTMLInputElement).value = s.user ?? "";
-    ($("password") as HTMLInputElement).value = s.password ?? "";
-    ($("from-name") as HTMLInputElement).value = s.fromName ?? "";
-    ($("from-email") as HTMLInputElement).value = s.fromEmail ?? "";
-    ($("subject") as HTMLInputElement).value = s.subject ?? "";
-    if (s.html) editor.innerHTML = s.html;
-    if (s.delay != null)
-      ($("delay") as HTMLInputElement).value = String(s.delay);
-    if (Array.isArray(s.recipients)) recipients = s.recipients;
+    applyState(s);
   } catch {
     // ignore corrupt state
   }
@@ -473,6 +487,13 @@ $("confirm-send").addEventListener("click", async () => {
       { maxRequestTime: Infinity },
     );
     progressText.textContent = `Done — ${res.sent} sent, ${res.failed} failed.`;
+    rpc.request
+      .pushHistory({ state: currentState() })
+      .then((r) => {
+        renderHistorySelect(r.entries);
+        historySelect.value = r.entries[0]?.id ?? "";
+      })
+      .catch(() => {});
   } catch (err) {
     progressText.textContent = `Error: ${err}`;
     const line = document.createElement("div");
@@ -486,5 +507,20 @@ $("confirm-send").addEventListener("click", async () => {
   }
 });
 
+historySelect.addEventListener("change", async () => {
+  const id = historySelect.value;
+  if (!id) return;
+  const res = await rpc.request.getHistoryEntry({ id });
+  if (!res.entry) return;
+  applyState(res.entry);
+  renderRecipients();
+  dirty = true;
+  saveState();
+});
+
 loadState();
 renderRecipients();
+rpc.request
+  .listHistory({})
+  .then((res) => renderHistorySelect(res.entries))
+  .catch(() => {});

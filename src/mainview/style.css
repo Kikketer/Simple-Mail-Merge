@@ -69,6 +69,13 @@ body {
   display: none;
 }
 
+.history-select {
+  max-width: 180px;
+  font-size: 12px;
+  padding: 4px 6px;
+  align-self: center;
+}
+
 .icon-btn {
   border: 1px solid #d2d2d7;
   background: #fff;

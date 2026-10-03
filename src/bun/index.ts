@@ -5,7 +5,51 @@ import {
   ApplicationMenu,
 } from "electrobun/main";
 import nodemailer from "nodemailer";
-import type { AppRPC, SendBatchParams } from "../shared/rpc";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import type {
+  AppRPC,
+  HistoryEntry,
+  HistoryMeta,
+  SavedState,
+  SendBatchParams,
+} from "../shared/rpc";
+
+const HISTORY_LIMIT = 50;
+
+function historyFilePath() {
+  const base =
+    process.platform === "darwin"
+      ? join(homedir(), "Library", "Application Support")
+      : process.platform === "win32"
+        ? (process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"))
+        : (process.env.XDG_DATA_HOME ?? join(homedir(), ".local", "share"));
+  return join(base, "com.cjweed.simplemailmerge", "history.json");
+}
+
+function readHistory(): HistoryEntry[] {
+  try {
+    const file = historyFilePath();
+    if (!existsSync(file)) return [];
+    const parsed = JSON.parse(readFileSync(file, "utf8"));
+    return Array.isArray(parsed) ? (parsed as HistoryEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeHistory(entries: HistoryEntry[]) {
+  const file = historyFilePath();
+  mkdirSync(join(file, ".."), { recursive: true });
+  writeFileSync(file, JSON.stringify(entries));
+}
+
+const toMeta = (e: HistoryEntry): HistoryMeta => ({
+  id: e.id,
+  savedAt: e.savedAt,
+  subject: e.subject,
+});
 
 function createTransporter(user: string, password: string) {
   return nodemailer.createTransport({
@@ -66,6 +110,31 @@ const rpc = BrowserView.defineRPC<AppRPC>({
           }
         }
         return { sent, failed };
+      },
+      listHistory: async () => ({
+        entries: readHistory().map(toMeta),
+      }),
+      getHistoryEntry: async ({ id }) => ({
+        entry: readHistory().find((e) => e.id === id) ?? null,
+      }),
+      pushHistory: async ({ state }: { state: SavedState }) => {
+        const entries = readHistory();
+        const newest = entries[0];
+        const { id: _id, savedAt: _savedAt, ...rest } = newest ?? {};
+        const changed =
+          !newest || JSON.stringify(rest) !== JSON.stringify(state);
+        if (changed) {
+          entries.unshift({
+            ...state,
+            id: crypto.randomUUID(),
+            savedAt: Date.now(),
+          });
+          if (entries.length > HISTORY_LIMIT) {
+            entries.length = HISTORY_LIMIT;
+          }
+          writeHistory(entries);
+        }
+        return { entries: entries.map(toMeta) };
       },
     },
     messages: {},
