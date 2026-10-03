@@ -4,3 +4,4 @@ build/
 hutch.lock
 release.env
 .cottontail-tmp/
+artifacts/
