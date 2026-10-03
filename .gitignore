@@ -5,3 +5,4 @@ hutch.lock
 release.env
 .cottontail-tmp/
 artifacts/
+.DS_Store
