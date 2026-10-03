@@ -4,7 +4,7 @@ export default {
   app: {
     name: "Simple Mail Merge",
     identifier: "com.cjweed.simplemailmerge",
-    version: "0.2.0",
+    version: "0.2.1",
   },
   build: {
     mainProcess: "bun",

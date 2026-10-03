@@ -73,7 +73,7 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 });
 
 new BrowserWindow({
-  title: "Bulk Mailer",
+  title: "Simple Mail Merge",
   url: "views://mainview/index.html",
   frame: { width: 1000, height: 750 },
   rpc,
@@ -81,10 +81,10 @@ new BrowserWindow({
 
 ApplicationMenu.setApplicationMenu([
   {
-    label: "Bulk Mailer",
+    label: "Simple Mail Merge",
     submenu: [
       {
-        label: "Quit Bulk Mailer",
+        label: "Quit Simple Mail Merge",
         action: "quit",
         accelerator: "CommandOrControl+Q",
       },
