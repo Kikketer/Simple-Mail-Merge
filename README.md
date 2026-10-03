@@ -1,9 +1,9 @@
-# Bulk Mailer (Simple Mail Merge)
+# Simple Mail Merge
 
 A tiny macOS app for sending personalized bulk email through your own
 iCloud SMTP account. Write one email, load a CSV of recipients, hit send.
 
-![Bulk Mailer](screenshot.png)
+![Simple Mail Merge](screenshot.png)
 
 ## Features
 

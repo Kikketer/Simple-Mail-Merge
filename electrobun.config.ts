@@ -2,9 +2,9 @@ import type { ElectrobunConfig } from "electrobun";
 
 export default {
   app: {
-    name: "Bulk Mailer",
+    name: "Simple Mail Merge",
     identifier: "com.cjweed.simplemailmerge",
-    version: "0.1.0",
+    version: "0.2.0",
   },
   build: {
     mainProcess: "bun",
