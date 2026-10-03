@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bulk Mailer</title>
+    <link rel="stylesheet" href="views://mainview/style.css" />
+    <script type="module" src="views://mainview/index.js"></script>
+  </head>
+  <body>
+    <div class="layout">
+      <section class="panel compose">
+        <div class="compose-header">
+          <h2>Compose</h2>
+          <div class="header-actions">
+            <span id="save-indicator" class="save-indicator"></span>
+            <button id="recipients-toggle" class="icon-btn" title="Recipients">☰</button>
+            <button id="settings-open" class="icon-btn" title="Settings">⚙</button>
+          </div>
+        </div>
+
+        <div class="row from-row">
+          <input id="from-name" type="text" placeholder="Your name" />
+          <input id="from-email" type="email" placeholder="From address (verified sender)" />
+        </div>
+
+        <input id="subject" type="text" placeholder="Subject" class="subject" />
+
+        <div class="toolbar">
+          <select id="format-block">
+            <option value="p">Normal</option>
+            <option value="h1">Heading 1</option>
+            <option value="h2">Heading 2</option>
+            <option value="h3">Heading 3</option>
+          </select>
+          <button data-cmd="bold" title="Bold (⌘B)"><b>B</b></button>
+          <button data-cmd="italic" title="Italic (⌘I)"><i>I</i></button>
+          <button data-cmd="underline" title="Underline (⌘U)"><u>U</u></button>
+          <button data-cmd="strikeThrough" title="Strikethrough (⇧⌘S)"><s>S</s></button>
+          <span class="sep"></span>
+          <button data-cmd="insertUnorderedList" title="Bullet list (⇧⌘8)">• List</button>
+          <button data-cmd="insertOrderedList" title="Numbered list (⇧⌘7)">1. List</button>
+          <span class="sep"></span>
+          <button id="link" title="Link (⌘K)">Link</button>
+          <button data-cmd="removeFormat" title="Clear formatting (⇧⌘X)">Clear</button>
+        </div>
+
+        <div class="editor-wrap">
+          <div id="editor" class="editor" contenteditable="true"></div>
+          <div id="link-popover" class="link-popover hidden">
+            <input id="link-url" type="url" placeholder="https://example.com" />
+            <button id="link-apply" class="primary">Apply</button>
+            <button id="link-remove">Remove</button>
+          </div>
+        </div>
+      </section>
+
+      <div id="backdrop" class="backdrop"></div>
+
+      <section class="panel send" id="send-panel">
+        <div class="send-header">
+          <h2>Recipients</h2>
+          <button id="recipients-close" class="icon-btn" title="Close">✕</button>
+        </div>
+        <div class="row">
+          <input id="csv" type="file" accept=".csv,text/csv" />
+        </div>
+        <div class="hint">CSV must have a header row with <code>Name</code> and <code>Email</code> columns. Other columns are ignored.</div>
+        <div class="row add-recipient">
+          <input id="add-name" type="text" placeholder="Name" />
+          <input id="add-email" type="email" placeholder="Email" />
+          <button id="add-btn">Add</button>
+        </div>
+        <div id="recipient-list" class="recipient-list"></div>
+
+        <div class="row send-controls">
+          <label>
+            Delay between sends (ms)
+            <input id="delay" type="number" value="1000" min="0" step="100" />
+          </label>
+          <button id="send" class="primary" disabled>Send</button>
+        </div>
+
+        <div class="progress">
+          <progress id="progress" value="0" max="0"></progress>
+          <div id="progress-text"></div>
+        </div>
+        <div id="log" class="log"></div>
+      </section>
+    </div>
+
+    <div id="confirm-modal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>Send emails?</h2>
+        </div>
+        <div id="confirm-text"></div>
+        <div class="row modal-actions">
+          <button id="confirm-cancel">Cancel</button>
+          <button id="confirm-send" class="primary">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="settings-modal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>Settings</h2>
+          <button id="settings-close" class="icon-btn" title="Close">✕</button>
+        </div>
+        <label class="field">
+          iCloud email (SMTP login)
+          <input id="user" type="email" placeholder="you@icloud.com" />
+        </label>
+        <label class="field">
+          App-specific password
+          <input id="password" type="password" placeholder="xxxx-xxxx-xxxx-xxxx" />
+        </label>
+        <div class="row">
+          <button id="verify" class="primary">Verify</button>
+          <div id="verify-status" class="status"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

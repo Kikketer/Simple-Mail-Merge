@@ -1,0 +1,375 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  color: #1d1d1f;
+  background: #f5f5f7;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 12px;
+  padding: 12px;
+  height: 100vh;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #d2d2d7;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.panel h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.compose-header,
+.send-header,
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.save-indicator {
+  font-size: 12px;
+  color: #1a7f37;
+  align-self: center;
+  margin-right: 4px;
+  transition: opacity 0.3s;
+}
+
+.save-indicator.unsaved {
+  color: #6e6e73;
+}
+
+.save-indicator:empty {
+  display: none;
+}
+
+.icon-btn {
+  border: 1px solid #d2d2d7;
+  background: #fff;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+#recipients-toggle,
+#recipients-close {
+  display: none;
+}
+
+.from-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+input,
+select,
+button {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid #d2d2d7;
+  border-radius: 6px;
+  background: #fff;
+}
+
+button {
+  cursor: pointer;
+}
+
+button.primary {
+  background: #0071e3;
+  border-color: #0071e3;
+  color: #fff;
+  font-weight: 600;
+  padding: 6px 18px;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.status {
+  font-size: 12px;
+  min-height: 14px;
+}
+
+.status.ok {
+  color: #1a7f37;
+}
+
+.status.err {
+  color: #cf222e;
+}
+
+.subject {
+  width: 100%;
+}
+
+.toolbar {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.toolbar button {
+  min-width: 32px;
+}
+
+.toolbar .sep {
+  width: 1px;
+  height: 20px;
+  background: #d2d2d7;
+  margin: 0 4px;
+}
+
+.editor-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 200px;
+  display: flex;
+}
+
+.editor {
+  flex: 1;
+  border: 1px solid #d2d2d7;
+  border-radius: 6px;
+  padding: 10px;
+  overflow-y: auto;
+  background: #fff;
+  outline: none;
+}
+
+.editor:focus {
+  border-color: #0071e3;
+}
+
+.link-popover {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 20;
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #d2d2d7;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.link-popover input {
+  width: 240px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.hint {
+  font-size: 12px;
+  color: #6e6e73;
+}
+
+.recipient-list {
+  flex: 1;
+  min-height: 80px;
+  overflow-y: auto;
+  border: 1px solid #e5e5ea;
+  border-radius: 6px;
+  padding: 6px;
+  font-size: 13px;
+}
+
+.recipient-list table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.recipient-list td {
+  padding: 3px 6px;
+  border-bottom: 1px solid #f0f0f2;
+}
+
+.recipient-list td.del {
+  width: 28px;
+  text-align: right;
+  border-bottom: 1px solid #f0f0f2;
+}
+
+.del-btn {
+  border: none;
+  background: none;
+  color: #c8c8cc;
+  font-size: 12px;
+  padding: 2px 4px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.del-btn:hover {
+  color: #cf222e;
+  background: #f0f0f2;
+}
+
+.add-recipient input {
+  flex: 1;
+  min-width: 0;
+}
+
+.add-recipient button {
+  flex-shrink: 0;
+}
+
+.send-controls {
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.send-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #6e6e73;
+}
+
+.send-controls input {
+  width: 100px;
+}
+
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progress progress {
+  width: 100%;
+}
+
+.log {
+  height: 140px;
+  overflow-y: auto;
+  border: 1px solid #e5e5ea;
+  border-radius: 6px;
+  padding: 6px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+}
+
+.log .fail {
+  color: #cf222e;
+}
+
+/* Settings modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.modal-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+  width: min(420px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.modal-actions {
+  justify-content: flex-end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #6e6e73;
+}
+
+.field input {
+  font-size: 14px;
+  color: #1d1d1f;
+}
+
+/* Backdrop for flyout */
+.backdrop {
+  display: none;
+}
+
+/* Tablet / narrow: recipients becomes a right-side flyout */
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  #recipients-toggle,
+  #recipients-close {
+    display: inline-block;
+  }
+
+  .panel.send {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(340px, 85vw);
+    z-index: 40;
+    border-radius: 0;
+    border: none;
+    border-left: 1px solid #d2d2d7;
+    transform: translateX(105%);
+    transition: transform 0.25s ease;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .panel.send.open {
+    transform: translateX(0);
+  }
+
+  .backdrop.visible {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgba(0, 0, 0, 0.25);
+  }
+}
