@@ -3,7 +3,7 @@ import type { ElectrobunConfig } from "electrobun";
 export default {
   app: {
     name: "Bulk Mailer",
-    identifier: "dev.kikketer.bulk-mailer",
+    identifier: "com.cjweed.simplemailmerge",
     version: "0.1.0",
   },
   build: {
@@ -23,7 +23,7 @@ export default {
     mac: {
       icons: "icon.iconset",
       codesign: true,
-      notarize: true,
+      notarize: false,
       createDmg: true,
     },
   },

@@ -34,7 +34,7 @@ if [[ ! -f "$ELECTROBUN_APPLEAPIKEYPATH" ]]; then
 	exit 1
 fi
 
-echo "==> Building (codesign + notarize)"
+echo "==> Building (codesign)"
 bun run build
 
 APP=$(find build/stable-macos-arm64 -maxdepth 1 -name "*.app" | head -1)
@@ -45,13 +45,33 @@ if [[ -z "$APP" || -z "$DMG" ]]; then
 	exit 1
 fi
 
+echo "==> Notarizing: $APP"
+ZIP="$(mktemp -d)/app.zip"
+ditto -c -k --keepParent "$APP" "$ZIP"
+xcrun notarytool submit "$ZIP" \
+	--key "$ELECTROBUN_APPLEAPIKEYPATH" \
+	--key-id "$ELECTROBUN_APPLEAPIKEY" \
+	--issuer "$ELECTROBUN_APPLEAPIISSUER" \
+	--wait
+xcrun stapler staple "$APP"
+
+echo "==> Notarizing DMG: $DMG"
+xcrun notarytool submit "$DMG" \
+	--key "$ELECTROBUN_APPLEAPIKEYPATH" \
+	--key-id "$ELECTROBUN_APPLEAPIKEY" \
+	--issuer "$ELECTROBUN_APPLEAPIISSUER" \
+	--wait
+xcrun stapler staple "$DMG"
+
 echo "==> Verifying signature: $APP"
 codesign --verify --deep --strict "$APP"
 codesign -dv --verbose=2 "$APP" 2>&1 | grep -E "Identifier|Authority" | head -4
 
-echo "==> Verifying notarization (Gatekeeper): $DMG"
-spctl -a -vv "$DMG"
-stapler validate "$DMG" || true
+echo "==> Verifying notarization (Gatekeeper): $APP"
+spctl -a -vv "$APP"
+
+echo "==> Verifying stapled ticket: $DMG"
+xcrun stapler validate "$DMG"
 
 TAG="${1:-}"
 if [[ -n "$TAG" ]]; then
