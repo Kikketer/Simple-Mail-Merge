@@ -5,6 +5,7 @@ import {
   ApplicationMenu,
 } from "electrobun/main";
 import nodemailer from "nodemailer";
+import juice from "juice";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -62,6 +63,33 @@ function createTransporter(user: string, password: string) {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Wrap the editor fragment in a real email document and inline a base
+// stylesheet so clients render it consistently (no reliance on each
+// client's default styles for h1/p/ul/etc).
+const EMAIL_CSS = `
+  body { margin: 0; padding: 0; font-family: -apple-system, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.5; color: #000000; }
+  h1 { font-size: 28px; margin: 0 0 16px; }
+  h2 { font-size: 22px; margin: 0 0 12px; }
+  h3 { font-size: 18px; margin: 0 0 10px; }
+  p { margin: 0 0 16px; }
+  ul, ol { margin: 0 0 16px; padding-left: 24px; }
+  li { margin: 0 0 4px; }
+  a { color: #1a6ef5; text-decoration: underline; }
+`;
+
+function buildEmailHtml(bodyHtml: string): string {
+  const doc = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>${EMAIL_CSS}</style>
+</head>
+<body>${bodyHtml}</body>
+</html>`;
+  return juice(doc);
+}
+
 const rpc = BrowserView.defineRPC<AppRPC>({
   handlers: {
     requests: {
@@ -75,6 +103,7 @@ const rpc = BrowserView.defineRPC<AppRPC>({
       },
       sendBatch: async (params: SendBatchParams) => {
         const transporter = createTransporter(params.user, params.password);
+        const html = buildEmailHtml(params.html);
         let sent = 0;
         let failed = 0;
 
@@ -85,7 +114,7 @@ const rpc = BrowserView.defineRPC<AppRPC>({
               from: `"${params.fromName || params.fromEmail || params.user}" <${params.fromEmail || params.user}>`,
               to: `"${r.name}" <${r.email}>`,
               subject: params.subject,
-              html: params.html,
+              html,
               text: params.text,
             });
             sent++;
