@@ -85,7 +85,7 @@ function buildEmailHtml(bodyHtml: string): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>${EMAIL_CSS}</style>
 </head>
-<body>${bodyHtml}</body>
+<body text="#000000" bgcolor="#FFFFFF">${bodyHtml}</body>
 </html>`;
   return juice(doc);
 }
@@ -115,7 +115,9 @@ const rpc = BrowserView.defineRPC<AppRPC>({
               to: `"${r.name}" <${r.email}>`,
               subject: params.subject,
               html,
-              text: params.text,
+              // Send HTML only — some clients (e.g. Spark) prefer the
+              // text/plain alternative and show a plain-text rendering.
+              // Thunderbird-style single-part messages render consistently.
             });
             sent++;
             rpc.send.sendProgress({

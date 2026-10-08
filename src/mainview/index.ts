@@ -480,7 +480,6 @@ $("confirm-send").addEventListener("click", async () => {
         fromEmail,
         subject,
         html,
-        text: editor.innerText,
         recipients,
         delayMs: Number(($("delay") as HTMLInputElement).value) || 0,
       },

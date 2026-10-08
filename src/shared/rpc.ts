@@ -12,7 +12,6 @@ export type SendBatchParams = {
   fromEmail: string;
   subject: string;
   html: string;
-  text: string;
   recipients: Recipient[];
   delayMs: number;
 };
