@@ -337,6 +337,23 @@ button:disabled {
   color: #1d1d1f;
 }
 
+/* About modal */
+.about-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.about-body a {
+  color: #0071e3;
+  text-decoration: none;
+}
+
+.about-body a:hover {
+  text-decoration: underline;
+}
+
 /* Backdrop for flyout */
 .backdrop {
   display: none;

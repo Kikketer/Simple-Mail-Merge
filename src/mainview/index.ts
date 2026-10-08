@@ -261,6 +261,27 @@ settingsModal.addEventListener("mousedown", (e) => {
   if (e.target === settingsModal) settingsModal.classList.add("hidden");
 });
 
+// --- About modal ---
+const aboutModal = $("about-modal");
+$("about-open").addEventListener("click", async () => {
+  const info = await rpc.request.getAppInfo({});
+  $("about-name").textContent = info.name;
+  $("about-version").textContent = info.version;
+  $("about-url").textContent = info.url;
+  aboutModal.classList.remove("hidden");
+});
+$("about-close").addEventListener("click", () =>
+  aboutModal.classList.add("hidden"),
+);
+aboutModal.addEventListener("mousedown", (e) => {
+  if (e.target === aboutModal) aboutModal.classList.add("hidden");
+});
+$("about-url").addEventListener("click", (e) => {
+  e.preventDefault();
+  const url = $("about-url").textContent;
+  if (url) rpc.request.openExternal({ url });
+});
+
 // --- Recipients flyout ---
 const sendPanel = $("send-panel");
 const backdrop = $("backdrop");
@@ -406,6 +427,61 @@ $("csv").addEventListener("change", async (e) => {
   markDirty();
 });
 
+// --- Sanitize pasted HTML ---
+// Content pasted from Google Docs/Word arrives full of spans with explicit
+// font styles, <b> wrappers marked font-weight:normal inside, ids, etc.
+// Normalize to clean semantic tags so our email stylesheet controls the look.
+function sanitizeEmailHtml(html: string): string {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const root = doc.body;
+
+  // Convert styled spans into semantic tags before attributes are stripped
+  root.querySelectorAll<HTMLElement>("span[style]").forEach((el) => {
+    const s = el.style;
+    const wrap = (tag: string) => {
+      const w = doc.createElement(tag);
+      w.append(...el.childNodes);
+      el.append(w);
+    };
+    const weight = parseInt(s.fontWeight);
+    if (s.fontWeight === "bold" || weight >= 600) wrap("b");
+    if (s.fontStyle === "italic") wrap("i");
+    if (s.textDecoration.includes("underline") && !el.closest("a")) wrap("u");
+  });
+
+  // Google Docs wraps blocks in <b> then resets weight on an inner span;
+  // if a descendant marked non-bold covers all the text, drop the <b>.
+  root.querySelectorAll("b, strong").forEach((b) => {
+    const inner = b.querySelector<HTMLElement>("[style*='font-weight']");
+    const fw = inner?.style.fontWeight;
+    if (
+      inner &&
+      (fw === "normal" || fw === "400") &&
+      inner.textContent?.trim() === b.textContent?.trim()
+    ) {
+      b.replaceWith(...b.childNodes);
+    }
+  });
+
+  root
+    .querySelectorAll("script, style, meta, link, title")
+    .forEach((el) => el.remove());
+  root
+    .querySelectorAll("span, font")
+    .forEach((el) => el.replaceWith(...el.childNodes));
+
+  // Strip every attribute except a[href]
+  root.querySelectorAll("*").forEach((el) => {
+    for (const attr of [...el.attributes]) {
+      if (!(el.tagName === "A" && attr.name === "href")) {
+        el.removeAttribute(attr.name);
+      }
+    }
+  });
+
+  return root.innerHTML;
+}
+
 // --- Verify & Send ---
 $("verify").addEventListener("click", async () => {
   const status = $("verify-status");
@@ -460,7 +536,7 @@ $("confirm-send").addEventListener("click", async () => {
   const password = ($("password") as HTMLInputElement).value;
   const fromEmail = ($("from-email") as HTMLInputElement).value.trim();
   const subject = ($("subject") as HTMLInputElement).value;
-  const html = editor.innerHTML.trim();
+  const html = sanitizeEmailHtml(editor.innerHTML.trim());
 
   sending = true;
   sendBtn.disabled = true;

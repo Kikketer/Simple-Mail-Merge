@@ -69,6 +69,14 @@ export type AppRPC = {
         params: { state: SavedState };
         response: { entries: HistoryMeta[] };
       };
+      getAppInfo: {
+        params: {};
+        response: { name: string; version: string; url: string };
+      };
+      openExternal: {
+        params: { url: string };
+        response: {};
+      };
     };
     messages: {};
   }>;
