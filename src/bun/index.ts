@@ -6,6 +6,7 @@ import {
   Utils,
 } from "electrobun/main";
 import nodemailer from "nodemailer";
+import { ImapFlow } from "imapflow";
 import juice from "juice";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -229,6 +230,28 @@ const rpc = BrowserView.defineRPC<AppRPC>({
         let sent = 0;
         let failed = 0;
 
+        // Archive copies to the Sent mailbox over IMAP — iCloud's SMTP
+        // server doesn't save sent copies, the client must append them.
+        let imap: ImapFlow | null = null;
+        let sentPath = "Sent Messages";
+        try {
+          imap = new ImapFlow({
+            host: "imap.mail.me.com",
+            port: 993,
+            secure: true,
+            auth: { user: params.user, pass: params.password },
+            logger: false,
+          });
+          await imap.connect();
+          const sentBox = (await imap.list()).find(
+            (box) => box.specialUse === "\\Sent",
+          );
+          if (sentBox) sentPath = sentBox.path;
+        } catch (err) {
+          console.error("IMAP connect failed; sent copies won't be saved:", err);
+          imap = null;
+        }
+
         for (let i = 0; i < params.recipients.length; i++) {
           const r = params.recipients[i];
           try {
@@ -246,6 +269,13 @@ const rpc = BrowserView.defineRPC<AppRPC>({
               envelope: { from: fromAddress, to: r.email },
               raw,
             });
+            if (imap) {
+              try {
+                await imap.append(sentPath, raw, ["\\Seen"]);
+              } catch (err) {
+                console.error(`Failed to save sent copy for ${r.email}:`, err);
+              }
+            }
             sent++;
             rpc.send.sendProgress({
               index: i,
@@ -267,6 +297,7 @@ const rpc = BrowserView.defineRPC<AppRPC>({
             await sleep(params.delayMs);
           }
         }
+        if (imap) await imap.logout().catch(() => {});
         return { sent, failed };
       },
       listHistory: async () => ({
