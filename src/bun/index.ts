@@ -12,6 +12,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import pkg from "../../package.json";
+import { EMAIL_CSS } from "../shared/email";
 import type {
   AppRPC,
   HistoryEntry,
@@ -69,17 +70,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // Wrap the sanitized fragment in an email document and inline a base
 // stylesheet. Clients that ignore semantic tag defaults (Spark iOS shows
 // h1 as plain bold text) still get explicit styling on every element.
-const EMAIL_CSS = `
-  body { margin: 0; padding: 16px; font-family: -apple-system, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.5; color: #000000; }
-  h1 { font-size: 28px; font-weight: bold; margin: 0 0 16px; }
-  h2 { font-size: 22px; font-weight: bold; margin: 0 0 12px; }
-  h3 { font-size: 18px; font-weight: bold; margin: 0 0 10px; }
-  p { margin: 0 0 16px; }
-  div { margin: 0; }
-  ul, ol { margin: 0 0 16px; padding-left: 24px; }
-  li { margin: 0 0 4px; }
-  a { color: #1a6ef5; text-decoration: underline; }
-`;
+// EMAIL_CSS is shared with the compose editor so the preview matches.
 
 function buildEmailHtml(bodyHtml: string): string {
   const doc = `<!DOCTYPE html>

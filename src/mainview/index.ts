@@ -1,4 +1,5 @@
 import { Electroview } from "electrobun/view";
+import { EDITOR_CSS, sanitizeEmailHtml } from "../shared/email";
 import type {
   AppRPC,
   HistoryMeta,
@@ -8,6 +9,12 @@ import type {
 
 const $ = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
+
+// Render the compose surface with the same rules that get inlined into sent
+// mail (EMAIL_CSS scoped to .editor) so the preview is 1:1 with recipients.
+const editorStyle = document.createElement("style");
+editorStyle.textContent = EDITOR_CSS;
+document.head.appendChild(editorStyle);
 
 const editor = $("editor");
 const sendBtn = $("send") as HTMLButtonElement;
@@ -185,8 +192,56 @@ function openLinkPopover() {
 
 $("link").addEventListener("click", openLinkPopover);
 
+// --- Paste as plain text ---
+// Foreign formatting (Google Docs wrappers, fonts, colors) wrecks the email
+// layout, so pasted content always lands as text. Newlines become <br>;
+// bare URLs get linkified so pasted links still work.
+editor.addEventListener("paste", (e) => {
+  e.preventDefault();
+  const text = e.clipboardData?.getData("text/plain");
+  if (!text) return;
+  const html = text
+    .split(/\r?\n/)
+    .map((line) =>
+      escapeHtml(line).replace(/https?:\/\/\S+/g, (m) => {
+        const trailing = m.match(/[.,;:!?)\]}”’]+$/)?.[0] ?? "";
+        const url = m.slice(0, m.length - trailing.length);
+        return `<a href="${url}">${url}</a>${trailing}`;
+      }),
+    )
+    .join("<br>");
+  document.execCommand("insertHTML", false, html);
+});
+
 // --- Editor keyboard shortcuts ---
+
+// WebKit quirk: typing a space right after a quote mark can land the space
+// on a new line. Intercept only that case (straight or smart-substituted
+// quotes) so autocorrect/spellcheck still run on spaces elsewhere.
+function caretAfterQuote(): boolean {
+  const sel = window.getSelection();
+  if (!sel?.isCollapsed || !sel.rangeCount) return false;
+  const range = sel.getRangeAt(0).cloneRange();
+  range.selectNodeContents(editor);
+  range.setEnd(sel.getRangeAt(0).startContainer, sel.getRangeAt(0).startOffset);
+  const prev = range.toString().slice(-1);
+  return prev !== "" && "\"“”'‘’".includes(prev);
+}
+
 editor.addEventListener("keydown", (e) => {
+  if (
+    (e.key === " " || e.code === "Space") &&
+    !e.metaKey &&
+    !e.ctrlKey &&
+    !e.altKey &&
+    !e.isComposing &&
+    caretAfterQuote()
+  ) {
+    e.preventDefault();
+    document.execCommand("insertText", false, " ");
+    markDirty();
+    return;
+  }
   if (!e.metaKey) return;
   const key = e.key.toLowerCase();
   const cmd = e.shiftKey
@@ -426,61 +481,6 @@ $("csv").addEventListener("change", async (e) => {
   renderRecipients();
   markDirty();
 });
-
-// --- Sanitize pasted HTML ---
-// Content pasted from Google Docs/Word arrives full of spans with explicit
-// font styles, <b> wrappers marked font-weight:normal inside, ids, etc.
-// Normalize to clean semantic tags so our email stylesheet controls the look.
-function sanitizeEmailHtml(html: string): string {
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  const root = doc.body;
-
-  // Convert styled spans into semantic tags before attributes are stripped
-  root.querySelectorAll<HTMLElement>("span[style]").forEach((el) => {
-    const s = el.style;
-    const wrap = (tag: string) => {
-      const w = doc.createElement(tag);
-      w.append(...el.childNodes);
-      el.append(w);
-    };
-    const weight = parseInt(s.fontWeight);
-    if (s.fontWeight === "bold" || weight >= 600) wrap("b");
-    if (s.fontStyle === "italic") wrap("i");
-    if (s.textDecoration.includes("underline") && !el.closest("a")) wrap("u");
-  });
-
-  // Google Docs wraps blocks in <b> then resets weight on an inner span;
-  // if a descendant marked non-bold covers all the text, drop the <b>.
-  root.querySelectorAll("b, strong").forEach((b) => {
-    const inner = b.querySelector<HTMLElement>("[style*='font-weight']");
-    const fw = inner?.style.fontWeight;
-    if (
-      inner &&
-      (fw === "normal" || fw === "400") &&
-      inner.textContent?.trim() === b.textContent?.trim()
-    ) {
-      b.replaceWith(...b.childNodes);
-    }
-  });
-
-  root
-    .querySelectorAll("script, style, meta, link, title")
-    .forEach((el) => el.remove());
-  root
-    .querySelectorAll("span, font")
-    .forEach((el) => el.replaceWith(...el.childNodes));
-
-  // Strip every attribute except a[href]
-  root.querySelectorAll("*").forEach((el) => {
-    for (const attr of [...el.attributes]) {
-      if (!(el.tagName === "A" && attr.name === "href")) {
-        el.removeAttribute(attr.name);
-      }
-    }
-  });
-
-  return root.innerHTML;
-}
 
 // --- Verify & Send ---
 $("verify").addEventListener("click", async () => {
